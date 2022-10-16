@@ -24,9 +24,9 @@ const (
 	grpcMaxConcurrentStreams = 1000000
 )
 
-var _ auth.AuthorizationServer = (*PureAuthHandler)(nil)
+var _ auth.AuthorizationServer = (*ExampleBasicAuthHandler)(nil)
 
-type PureAuthHandler struct{}
+type ExampleBasicAuthHandler struct{}
 
 var (
 	CheckUnauthorized = &auth.CheckResponse{
@@ -41,7 +41,7 @@ var (
 				Headers: []*core.HeaderValueOption{
 					{Header: &core.HeaderValue{Key: "WWW-Authenticate", Value: `Basic realm="Access to upstream", charset="UTF-8"`}},
 				},
-				Body: "Unauthorized(default user&password: guest)",
+				Body: "Unauthorized",
 			},
 		},
 	}
@@ -61,7 +61,7 @@ func getPlustHeaders(headers map[string]string) []*core.HeaderValueOption {
 	return result
 }
 
-func (s *PureAuthHandler) Check(ctx context.Context, req *auth.CheckRequest) (*auth.CheckResponse, error) {
+func (s *ExampleBasicAuthHandler) Check(ctx context.Context, req *auth.CheckRequest) (*auth.CheckResponse, error) {
 	// see https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/header/v3/external_auth.proto
 	if headerAuth, exists := req.Attributes.Request.Http.Headers["authorization"]; !exists {
 		return CheckUnauthorized, nil
@@ -107,7 +107,7 @@ func main() {
 		}),
 	)
 	grpcServer := grpc.NewServer(grpcOptions...)
-	auth.RegisterAuthorizationServer(grpcServer, &PureAuthHandler{})
+	auth.RegisterAuthorizationServer(grpcServer, &ExampleBasicAuthHandler{})
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
