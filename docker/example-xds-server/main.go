@@ -39,7 +39,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
-func newMustAnypb(src protoreflect.ProtoMessage) *anypb.Any {
+func mustNewAnypb(src protoreflect.ProtoMessage) *anypb.Any {
 	any, err := anypb.New(src)
 	if err != nil {
 		panic(err)
@@ -78,7 +78,7 @@ var (
 		DnsLookupFamily: cluster.Cluster_V4_ONLY,
 	}
 
-	ExampleAuthGRPC = newMustAnypb(&ext_authz.ExtAuthz{
+	ExampleAuthGRPC = mustNewAnypb(&ext_authz.ExtAuthz{
 		Services: &ext_authz.ExtAuthz_GrpcService{
 			GrpcService: &core.GrpcService{
 				TargetSpecifier: &core.GrpcService_EnvoyGrpc_{
@@ -95,7 +95,7 @@ var (
 	ExampleLocalRoute *route.RouteConfiguration = &route.RouteConfiguration{
 		Name: "example_local_route",
 		InternalOnlyHeaders: []string{
-			"x-internal",
+			"x-request-id",
 		},
 		ResponseHeadersToRemove: []string{
 			"x-envoy-upstream-service-time",
@@ -156,7 +156,8 @@ var (
 			Filters: []*listener.Filter{{
 				Name: wellknown.HTTPConnectionManager,
 				ConfigType: &listener.Filter_TypedConfig{
-					TypedConfig: newMustAnypb(&hcm.HttpConnectionManager{
+					TypedConfig: mustNewAnypb(&hcm.HttpConnectionManager{
+						ServerName: "example", // see https://github.com/envoyproxy/envoy/blob/v1.23.1/api/envoy/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#L422
 						CodecType:  hcm.HttpConnectionManager_AUTO,
 						StatPrefix: "http",
 						HttpFilters: []*hcm.HttpFilter{{
@@ -167,7 +168,7 @@ var (
 						}, {
 							Name: wellknown.Router,
 							ConfigType: &hcm.HttpFilter_TypedConfig{
-								TypedConfig: newMustAnypb(&routerv3.Router{}),
+								TypedConfig: mustNewAnypb(&routerv3.Router{}),
 							},
 						}},
 						RouteSpecifier: &hcm.HttpConnectionManager_Rds{

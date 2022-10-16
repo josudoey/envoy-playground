@@ -10,9 +10,9 @@ import (
 	"net/http"
 )
 
-type ExampleServer struct{}
+type ConnectionInfoHandler struct{}
 
-func (s *ExampleServer) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+func (h *ConnectionInfoHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
@@ -46,6 +46,6 @@ func main() {
 	}
 
 	log.Printf("listen %v", address)
-	httpServer := &http.Server{Handler: &ExampleServer{}}
+	httpServer := &http.Server{Handler: &ConnectionInfoHandler{}}
 	httpServer.Serve(netListener)
 }
