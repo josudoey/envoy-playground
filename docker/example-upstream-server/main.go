@@ -23,8 +23,9 @@ func (s *ExampleServer) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusOK)
 	json.NewEncoder(res).Encode(map[string]interface{}{
-		"path":    req.URL.String(),
 		"method":  req.Method,
+		"host":    req.Host,
+		"path":    req.URL.String(),
 		"headers": req.Header,
 		"content": string(body),
 	})
@@ -45,7 +46,6 @@ func main() {
 	}
 
 	log.Printf("listen %v", address)
-
 	httpServer := &http.Server{Handler: &ExampleServer{}}
 	httpServer.Serve(netListener)
 }
