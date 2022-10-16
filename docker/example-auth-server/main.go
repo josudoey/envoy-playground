@@ -10,7 +10,6 @@ import (
 
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
-
 	"google.golang.org/genproto/googleapis/rpc/code"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"

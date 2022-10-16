@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	defaultLogger "log"
+	"log"
 	"net"
 	"os"
 	"time"
@@ -25,10 +25,9 @@ import (
 	runtimeservice "github.com/envoyproxy/go-control-plane/envoy/service/runtime/v3"
 	secretservice "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-
 	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/log"
+	envoylog "github.com/envoyproxy/go-control-plane/pkg/log"
 	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/test/v3"
@@ -232,14 +231,14 @@ func RunServer(ctx context.Context, srv server.Server, port uint) {
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		defaultLogger.Fatal(err)
+		log.Fatal(err)
 	}
 
 	registerServer(grpcServer, srv)
 
-	defaultLogger.Printf("management server listening on %d\n", port)
+	log.Printf("management server listening on %d\n", port)
 	if err = grpcServer.Serve(lis); err != nil {
-		defaultLogger.Println(err)
+		log.Println(err)
 	}
 }
 
@@ -259,7 +258,7 @@ func main() {
 	// Tell Envoy to use this Node ID
 	flag.StringVar(&nodeID, "nodeID", "test-id", "Node ID")
 
-	logger := log.NewDefaultLogger()
+	logger := envoylog.NewDefaultLogger()
 
 	sapshotCache := cache.NewSnapshotCache(false, cache.IDHash{}, logger)
 	snapshot := GenerateSnapshot()
