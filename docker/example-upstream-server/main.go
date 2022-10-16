@@ -34,7 +34,9 @@ func main() {
 	var (
 		port uint
 	)
+
 	flag.UintVar(&port, "port", 80, "server port")
+	flag.Parse()
 
 	address := fmt.Sprintf(":%d", port)
 	netListener, err := net.Listen("tcp", address)

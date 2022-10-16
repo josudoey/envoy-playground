@@ -228,13 +228,12 @@ func RunServer(ctx context.Context, srv server.Server, port uint) {
 		}),
 	)
 	grpcServer := grpc.NewServer(grpcOptions...)
+	registerServer(grpcServer, srv)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	registerServer(grpcServer, srv)
 
 	log.Printf("management server listening on %d\n", port)
 	if err = grpcServer.Serve(lis); err != nil {
@@ -257,6 +256,7 @@ func main() {
 
 	// Tell Envoy to use this Node ID
 	flag.StringVar(&nodeID, "nodeID", "test-id", "Node ID")
+	flag.Parse()
 
 	logger := envoylog.NewDefaultLogger()
 

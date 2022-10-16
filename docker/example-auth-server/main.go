@@ -10,6 +10,7 @@ import (
 
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/genproto/googleapis/rpc/code"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
@@ -27,7 +28,26 @@ var _ auth.AuthorizationServer = (*PureAuthHandler)(nil)
 
 type PureAuthHandler struct{}
 
-func newHeaders(headers map[string]string) []*core.HeaderValueOption {
+var (
+	CheckUnauthorized = &auth.CheckResponse{
+		Status: &status.Status{
+			Code: int32(code.Code_UNAUTHENTICATED),
+		},
+		HttpResponse: &auth.CheckResponse_DeniedResponse{
+			DeniedResponse: &auth.DeniedHttpResponse{
+				Status: &typev3.HttpStatus{
+					Code: typev3.StatusCode_Unauthorized,
+				},
+				Headers: []*core.HeaderValueOption{
+					{Header: &core.HeaderValue{Key: "WWW-Authenticate", Value: `Basic realm="Access to upstream", charset="UTF-8"`}},
+				},
+				Body: "Unauthorized(default user&password: guest)",
+			},
+		},
+	}
+)
+
+func getPlustHeaders(headers map[string]string) []*core.HeaderValueOption {
 	var result []*core.HeaderValueOption
 	for name, value := range headers {
 		result = append(result, &core.HeaderValueOption{
@@ -42,13 +62,20 @@ func newHeaders(headers map[string]string) []*core.HeaderValueOption {
 }
 
 func (s *PureAuthHandler) Check(ctx context.Context, req *auth.CheckRequest) (*auth.CheckResponse, error) {
+	// see https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/header/v3/external_auth.proto
+	if headerAuth, exists := req.Attributes.Request.Http.Headers["authorization"]; !exists {
+		return CheckUnauthorized, nil
+	} else if headerAuth != "Basic Z3Vlc3Q6Z3Vlc3Q=" {
+		return CheckUnauthorized, nil
+	}
+
 	return &auth.CheckResponse{
 		Status: &status.Status{
 			Code: int32(code.Code_OK),
 		},
 		HttpResponse: &auth.CheckResponse_OkResponse{
 			OkResponse: &auth.OkHttpResponse{
-				Headers: newHeaders(req.Attributes.Request.Http.Headers),
+				Headers: getPlustHeaders(req.Attributes.Request.Http.Headers),
 			},
 		},
 	}, nil
@@ -61,6 +88,7 @@ func main() {
 
 	// The port that this auth server listens on
 	flag.UintVar(&port, "port", 80, "auth server port")
+	flag.Parse()
 
 	// gRPC golang library sets a very small upper bound for the number gRPC/h2
 	// streams over a single TCP connection. If a proxy multiplexes requests over
