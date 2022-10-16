@@ -9,15 +9,14 @@ WORKDIR /app
 COPY go.mod ./
 COPY go.sum ./
 COPY main.go ./
-
 RUN go mod download
 
-RUN go build -race -o example-xds-server main.go
+RUN go build -race -o example-auth-server main.go
 
 FROM alpine as final
 
-EXPOSE 18000
+EXPOSE 80
 
-COPY --from=builder /app/example-xds-server /bin/
+COPY --from=builder /app/example-auth-server /bin/
 
-CMD ["/bin/example-xds-server"]
+CMD ["/bin/example-auth-server"]

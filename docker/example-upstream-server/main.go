@@ -1,0 +1,49 @@
+package main
+
+import (
+	"encoding/json"
+	"flag"
+	"fmt"
+	"io"
+	"log"
+	"net"
+	"net/http"
+)
+
+type ExampleServer struct{}
+
+func (s *ExampleServer) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		log.Printf("%v", err)
+		return
+	}
+
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusOK)
+	json.NewEncoder(res).Encode(map[string]interface{}{
+		"path":    req.URL.String(),
+		"method":  req.Method,
+		"headers": req.Header,
+		"content": string(body),
+	})
+}
+
+func main() {
+	var (
+		port uint
+	)
+	flag.UintVar(&port, "port", 80, "server port")
+
+	address := fmt.Sprintf(":%d", port)
+	netListener, err := net.Listen("tcp", address)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("listen %v", address)
+
+	httpServer := &http.Server{Handler: &ExampleServer{}}
+	httpServer.Serve(netListener)
+}

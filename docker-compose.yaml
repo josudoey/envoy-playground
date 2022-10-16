@@ -1,0 +1,34 @@
+version: "3"
+
+services:
+  example-auth:
+    build:
+      context: docker/example-auth-server/
+    ports:
+      - "1080:80"
+  example-upstream:
+    build:
+      context: docker/example-upstream-server/
+    ports:
+      - "8080:80"
+  example-xds:
+    build:
+      context: docker/example-xds-server/
+    ports:
+      - "18000:18000"
+    command:
+      # see https://github.com/envoyproxy/go-control-plane/blob/v0.10.3/internal/example/main/main.go#L46
+      - /bin/example-xds-server
+      - -debug
+      - -nodeID=test-id
+      - -port=18000
+  example-proxy:
+    depends_on:
+      - example-upstream
+      - example-xds
+    image: envoyproxy/envoy:v1.23-latest
+    volumes:
+      - ./etc/envoy/envoy.yaml:/etc/envoy/envoy.yaml
+    ports:
+      - "9901:9901"
+      - "10000:10000"

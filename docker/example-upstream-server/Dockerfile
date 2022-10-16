@@ -7,17 +7,15 @@ RUN apk add --no-cache --update alpine-sdk \
 WORKDIR /app
 
 COPY go.mod ./
-COPY go.sum ./
 COPY main.go ./
-
 RUN go mod download
 
-RUN go build -race -o example-xds-server main.go
+RUN go build -race -o example-upstream-server main.go
 
 FROM alpine as final
 
-EXPOSE 18000
+EXPOSE 80
 
-COPY --from=builder /app/example-xds-server /bin/
+COPY --from=builder /app/example-upstream-server /bin/
 
-CMD ["/bin/example-xds-server"]
+CMD ["/bin/example-upstream-server"]
