@@ -47,7 +47,7 @@ var (
 	}
 )
 
-func getPlustHeaders(headers map[string]string) []*core.HeaderValueOption {
+func newPlusHeaders(headers map[string]string) []*core.HeaderValueOption {
 	var result []*core.HeaderValueOption
 	for name, value := range headers {
 		result = append(result, &core.HeaderValueOption{
@@ -75,7 +75,7 @@ func (s *ExampleBasicAuthHandler) Check(ctx context.Context, req *auth.CheckRequ
 		},
 		HttpResponse: &auth.CheckResponse_OkResponse{
 			OkResponse: &auth.OkHttpResponse{
-				Headers: getPlustHeaders(req.Attributes.Request.Http.Headers),
+				Headers: newPlusHeaders(req.Attributes.Request.Http.Headers),
 			},
 		},
 	}, nil
