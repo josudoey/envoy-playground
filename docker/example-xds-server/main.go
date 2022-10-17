@@ -48,9 +48,11 @@ func mustNewAnypb(src protoreflect.ProtoMessage) *anypb.Any {
 }
 
 var (
-	ExampleUpstreamHttpRouteActionCluster = &route.RouteAction_Cluster{
-		Cluster: "example-upstream-http",
-	}
+	ExampleUpstreamHttpRoute = &route.Route_Route{Route: &route.RouteAction{
+		ClusterSpecifier: &route.RouteAction_Cluster{
+			Cluster: "example-upstream-http",
+		},
+	}}
 	ExampleAuthGRPC = mustNewAnypb(&ext_authz.ExtAuthz{
 		Services: &ext_authz.ExtAuthz_GrpcService{
 			GrpcService: &core.GrpcService{
@@ -97,11 +99,7 @@ var (
 							Prefix: "/bearer/",
 						},
 					},
-					Action: &route.Route_Route{
-						Route: &route.RouteAction{
-							ClusterSpecifier: ExampleUpstreamHttpRouteActionCluster,
-						},
-					},
+					Action: ExampleUpstreamHttpRoute,
 				},
 				{
 					TypedPerFilterConfig: map[string]*anypb.Any{
@@ -118,11 +116,7 @@ var (
 							Prefix: "/basic/",
 						},
 					},
-					Action: &route.Route_Route{
-						Route: &route.RouteAction{
-							ClusterSpecifier: ExampleUpstreamHttpRouteActionCluster,
-						},
-					},
+					Action: ExampleUpstreamHttpRoute,
 				}, {
 					TypedPerFilterConfig: map[string]*anypb.Any{
 						ExampleBasicAuthFilter.Name: mustNewAnypb(&ext_authz.ExtAuthzPerRoute{Override: &ext_authz.ExtAuthzPerRoute_Disabled{
@@ -134,11 +128,7 @@ var (
 							Prefix: "/",
 						},
 					},
-					Action: &route.Route_Route{
-						Route: &route.RouteAction{
-							ClusterSpecifier: ExampleUpstreamHttpRouteActionCluster,
-						},
-					},
+					Action: ExampleUpstreamHttpRoute,
 				}},
 		}},
 	}
