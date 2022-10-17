@@ -61,7 +61,7 @@ func newPlusHeaders(headers map[string]string) []*core.HeaderValueOption {
 	return result
 }
 
-func (s *ExampleBasicAuthHandler) Check(ctx context.Context, req *auth.CheckRequest) (*auth.CheckResponse, error) {
+func (h *ExampleBasicAuthHandler) Check(ctx context.Context, req *auth.CheckRequest) (*auth.CheckResponse, error) {
 	// see https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/auth/v3/external_auth.proto
 	if headerAuth, exists := req.Attributes.Request.Http.Headers["authorization"]; !exists {
 		return CheckUnauthorized, nil

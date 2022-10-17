@@ -48,50 +48,6 @@ func mustNewAnypb(src protoreflect.ProtoMessage) *anypb.Any {
 }
 
 var (
-	ExampleUpstreamHttpCluster *cluster.Cluster = &cluster.Cluster{
-		Name:                 "example-upstream-http",
-		ConnectTimeout:       durationpb.New(5 * time.Second),
-		ClusterDiscoveryType: &cluster.Cluster_Type{Type: cluster.Cluster_LOGICAL_DNS},
-		LbPolicy:             cluster.Cluster_ROUND_ROBIN,
-		LoadAssignment: &endpoint.ClusterLoadAssignment{
-			ClusterName: "example-upstream-http",
-			Endpoints: []*endpoint.LocalityLbEndpoints{{
-				LbEndpoints: []*endpoint.LbEndpoint{{
-					HostIdentifier: &endpoint.LbEndpoint_Endpoint{
-						Endpoint: &endpoint.Endpoint{
-							Address: &core.Address{
-								Address: &core.Address_SocketAddress{
-									SocketAddress: &core.SocketAddress{
-										Protocol: core.SocketAddress_TCP,
-										Address:  "example-upstream",
-										PortSpecifier: &core.SocketAddress_PortValue{
-											PortValue: 80,
-										},
-									},
-								},
-							},
-						},
-					},
-				}},
-			}},
-		},
-		DnsLookupFamily: cluster.Cluster_V4_ONLY,
-	}
-
-	ExampleAuthGRPC = mustNewAnypb(&ext_authz.ExtAuthz{
-		Services: &ext_authz.ExtAuthz_GrpcService{
-			GrpcService: &core.GrpcService{
-				TargetSpecifier: &core.GrpcService_EnvoyGrpc_{
-					EnvoyGrpc: &core.GrpcService_EnvoyGrpc{
-						ClusterName: "example-auth-grpc",
-					},
-				},
-			},
-		},
-		TransportApiVersion: core.ApiVersion_V3,
-		StatusOnError:       &typev3.HttpStatus{Code: typev3.StatusCode(typev3.StatusCode_InternalServerError)},
-	})
-
 	ExampleLocalRoute *route.RouteConfiguration = &route.RouteConfiguration{
 		Name: "example_local_route",
 		InternalOnlyHeaders: []string{
@@ -138,6 +94,50 @@ var (
 			},
 		},
 	}
+
+	ExampleUpstreamHttpCluster *cluster.Cluster = &cluster.Cluster{
+		Name:                 "example-upstream-http",
+		ConnectTimeout:       durationpb.New(5 * time.Second),
+		ClusterDiscoveryType: &cluster.Cluster_Type{Type: cluster.Cluster_LOGICAL_DNS},
+		LbPolicy:             cluster.Cluster_ROUND_ROBIN,
+		LoadAssignment: &endpoint.ClusterLoadAssignment{
+			ClusterName: "example-upstream-http",
+			Endpoints: []*endpoint.LocalityLbEndpoints{{
+				LbEndpoints: []*endpoint.LbEndpoint{{
+					HostIdentifier: &endpoint.LbEndpoint_Endpoint{
+						Endpoint: &endpoint.Endpoint{
+							Address: &core.Address{
+								Address: &core.Address_SocketAddress{
+									SocketAddress: &core.SocketAddress{
+										Protocol: core.SocketAddress_TCP,
+										Address:  "example-upstream",
+										PortSpecifier: &core.SocketAddress_PortValue{
+											PortValue: 80,
+										},
+									},
+								},
+							},
+						},
+					},
+				}},
+			}},
+		},
+		DnsLookupFamily: cluster.Cluster_V4_ONLY,
+	}
+
+	ExampleAuthGRPC = mustNewAnypb(&ext_authz.ExtAuthz{
+		Services: &ext_authz.ExtAuthz_GrpcService{
+			GrpcService: &core.GrpcService{
+				TargetSpecifier: &core.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &core.GrpcService_EnvoyGrpc{
+						ClusterName: "example-auth-grpc",
+					},
+				},
+			},
+		},
+		TransportApiVersion: core.ApiVersion_V3,
+		StatusOnError:       &typev3.HttpStatus{Code: typev3.StatusCode(typev3.StatusCode_InternalServerError)},
+	})
 
 	ExampleProxyListener = &listener.Listener{
 		Name: "example_proxy_listener",
