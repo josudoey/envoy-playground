@@ -15,10 +15,12 @@ open http://localhost:8080
 
 ## example proxy server 
 ```sh
-open http://localhost:10000
+open http://localhost:10000/example
+open http://localhost:10000/basic/example
 # default 
 #   username: guest
 #   password: guest
+open http://localhost:10000/bearer/example
 ```
 
 ## example proxy admin 

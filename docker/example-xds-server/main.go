@@ -48,6 +48,28 @@ func mustNewAnypb(src protoreflect.ProtoMessage) *anypb.Any {
 }
 
 var (
+	ExampleUpstreamHttpRouteActionCluster = &route.RouteAction_Cluster{
+		Cluster: "example-upstream-http",
+	}
+	ExampleAuthGRPC = mustNewAnypb(&ext_authz.ExtAuthz{
+		Services: &ext_authz.ExtAuthz_GrpcService{
+			GrpcService: &core.GrpcService{
+				TargetSpecifier: &core.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &core.GrpcService_EnvoyGrpc{
+						ClusterName: "example-auth-grpc",
+					},
+				},
+			},
+		},
+		TransportApiVersion: core.ApiVersion_V3,
+		StatusOnError:       &typev3.HttpStatus{Code: typev3.StatusCode(typev3.StatusCode_InternalServerError)},
+	})
+	ExampleBasicAuthFilter = &hcm.HttpFilter{
+		Name: wellknown.HTTPExternalAuthorization,
+		ConfigType: &hcm.HttpFilter_TypedConfig{
+			TypedConfig: ExampleAuthGRPC,
+		},
+	}
 	ExampleLocalRoute *route.RouteConfiguration = &route.RouteConfiguration{
 		Name: "example_local_route",
 		InternalOnlyHeaders: []string{
@@ -59,20 +81,65 @@ var (
 		VirtualHosts: []*route.VirtualHost{{
 			Name:    "example_local_service",
 			Domains: []string{"*"},
-			Routes: []*route.Route{{
-				Match: &route.RouteMatch{
-					PathSpecifier: &route.RouteMatch_Prefix{
-						Prefix: "/",
+			Routes: []*route.Route{
+				{
+					TypedPerFilterConfig: map[string]*anypb.Any{
+						ExampleBasicAuthFilter.Name: mustNewAnypb(&ext_authz.ExtAuthzPerRoute{Override: &ext_authz.ExtAuthzPerRoute_CheckSettings{
+							CheckSettings: &ext_authz.CheckSettings{
+								ContextExtensions: map[string]string{
+									"auth-scheme": "bearer",
+								},
+							},
+						}}),
 					},
-				},
-				Action: &route.Route_Route{
-					Route: &route.RouteAction{
-						ClusterSpecifier: &route.RouteAction_Cluster{
-							Cluster: "example-upstream-http",
+					Match: &route.RouteMatch{
+						PathSpecifier: &route.RouteMatch_Prefix{
+							Prefix: "/bearer/",
+						},
+					},
+					Action: &route.Route_Route{
+						Route: &route.RouteAction{
+							ClusterSpecifier: ExampleUpstreamHttpRouteActionCluster,
 						},
 					},
 				},
-			}},
+				{
+					TypedPerFilterConfig: map[string]*anypb.Any{
+						ExampleBasicAuthFilter.Name: mustNewAnypb(&ext_authz.ExtAuthzPerRoute{Override: &ext_authz.ExtAuthzPerRoute_CheckSettings{
+							CheckSettings: &ext_authz.CheckSettings{
+								ContextExtensions: map[string]string{
+									"auth-scheme": "basic",
+								},
+							},
+						}}),
+					},
+					Match: &route.RouteMatch{
+						PathSpecifier: &route.RouteMatch_Prefix{
+							Prefix: "/basic/",
+						},
+					},
+					Action: &route.Route_Route{
+						Route: &route.RouteAction{
+							ClusterSpecifier: ExampleUpstreamHttpRouteActionCluster,
+						},
+					},
+				}, {
+					TypedPerFilterConfig: map[string]*anypb.Any{
+						ExampleBasicAuthFilter.Name: mustNewAnypb(&ext_authz.ExtAuthzPerRoute{Override: &ext_authz.ExtAuthzPerRoute_Disabled{
+							Disabled: true,
+						}}),
+					},
+					Match: &route.RouteMatch{
+						PathSpecifier: &route.RouteMatch_Prefix{
+							Prefix: "/",
+						},
+					},
+					Action: &route.Route_Route{
+						Route: &route.RouteAction{
+							ClusterSpecifier: ExampleUpstreamHttpRouteActionCluster,
+						},
+					},
+				}},
 		}},
 	}
 
@@ -125,20 +192,6 @@ var (
 		DnsLookupFamily: cluster.Cluster_V4_ONLY,
 	}
 
-	ExampleAuthGRPC = mustNewAnypb(&ext_authz.ExtAuthz{
-		Services: &ext_authz.ExtAuthz_GrpcService{
-			GrpcService: &core.GrpcService{
-				TargetSpecifier: &core.GrpcService_EnvoyGrpc_{
-					EnvoyGrpc: &core.GrpcService_EnvoyGrpc{
-						ClusterName: "example-auth-grpc",
-					},
-				},
-			},
-		},
-		TransportApiVersion: core.ApiVersion_V3,
-		StatusOnError:       &typev3.HttpStatus{Code: typev3.StatusCode(typev3.StatusCode_InternalServerError)},
-	})
-
 	ExampleProxyListener = &listener.Listener{
 		Name: "example_proxy_listener",
 		Address: &core.Address{
@@ -153,30 +206,28 @@ var (
 			},
 		},
 		FilterChains: []*listener.FilterChain{{
-			Filters: []*listener.Filter{{
-				Name: wellknown.HTTPConnectionManager,
-				ConfigType: &listener.Filter_TypedConfig{
-					TypedConfig: mustNewAnypb(&hcm.HttpConnectionManager{
-						ServerName: "example", // see https://github.com/envoyproxy/envoy/blob/v1.23.1/api/envoy/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#L422
-						CodecType:  hcm.HttpConnectionManager_AUTO,
-						StatPrefix: "http",
-						HttpFilters: []*hcm.HttpFilter{{
-							Name: wellknown.HTTPExternalAuthorization,
-							ConfigType: &hcm.HttpFilter_TypedConfig{
-								TypedConfig: ExampleAuthGRPC,
+			Filters: []*listener.Filter{
+				{
+					Name: wellknown.HTTPConnectionManager,
+					ConfigType: &listener.Filter_TypedConfig{
+						TypedConfig: mustNewAnypb(&hcm.HttpConnectionManager{
+							ServerName: "example", // see https://github.com/envoyproxy/envoy/blob/v1.23.1/api/envoy/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#L422
+							CodecType:  hcm.HttpConnectionManager_AUTO,
+							StatPrefix: "http",
+							HttpFilters: []*hcm.HttpFilter{
+								ExampleBasicAuthFilter,
+								{
+									Name: wellknown.Router,
+									ConfigType: &hcm.HttpFilter_TypedConfig{
+										TypedConfig: mustNewAnypb(&routerv3.Router{}),
+									},
+								}},
+							RouteSpecifier: &hcm.HttpConnectionManager_Rds{
+								Rds: ExampleRds,
 							},
-						}, {
-							Name: wellknown.Router,
-							ConfigType: &hcm.HttpFilter_TypedConfig{
-								TypedConfig: mustNewAnypb(&routerv3.Router{}),
-							},
-						}},
-						RouteSpecifier: &hcm.HttpConnectionManager_Rds{
-							Rds: ExampleRds,
-						},
-					}),
-				},
-			}},
+						}),
+					},
+				}},
 		}},
 	}
 )

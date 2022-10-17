@@ -24,12 +24,25 @@ const (
 	grpcMaxConcurrentStreams = 1000000
 )
 
-var _ auth.AuthorizationServer = (*ExampleBasicAuthHandler)(nil)
+var _ auth.AuthorizationServer = (*ExampleAuthHandler)(nil)
 
-type ExampleBasicAuthHandler struct{}
+type ExampleAuthHandler struct{}
 
 var (
 	CheckUnauthorized = &auth.CheckResponse{
+		Status: &status.Status{
+			Code: int32(code.Code_UNAUTHENTICATED),
+		},
+		HttpResponse: &auth.CheckResponse_DeniedResponse{
+			DeniedResponse: &auth.DeniedHttpResponse{
+				Status: &typev3.HttpStatus{
+					Code: typev3.StatusCode_Unauthorized,
+				},
+				Body: "Unauthorized",
+			},
+		},
+	}
+	CheckBasicUnauthorized = &auth.CheckResponse{
 		Status: &status.Status{
 			Code: int32(code.Code_UNAUTHENTICATED),
 		},
@@ -61,11 +74,16 @@ func newPlusHeaders(headers map[string]string) []*core.HeaderValueOption {
 	return result
 }
 
-func (h *ExampleBasicAuthHandler) Check(ctx context.Context, req *auth.CheckRequest) (*auth.CheckResponse, error) {
+func (h *ExampleAuthHandler) Check(ctx context.Context, req *auth.CheckRequest) (*auth.CheckResponse, error) {
 	// see https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/auth/v3/external_auth.proto
-	if headerAuth, exists := req.Attributes.Request.Http.Headers["authorization"]; !exists {
-		return CheckUnauthorized, nil
-	} else if headerAuth != "Basic Z3Vlc3Q6Z3Vlc3Q=" {
+	authSchema := req.Attributes.ContextExtensions["auth-scheme"]
+	if authSchema == "basic" {
+		if headerAuth, exists := req.Attributes.Request.Http.Headers["authorization"]; !exists {
+			return CheckBasicUnauthorized, nil
+		} else if headerAuth != "Basic Z3Vlc3Q6Z3Vlc3Q=" {
+			return CheckBasicUnauthorized, nil
+		}
+	} else {
 		return CheckUnauthorized, nil
 	}
 
@@ -107,7 +125,7 @@ func main() {
 		}),
 	)
 	grpcServer := grpc.NewServer(grpcOptions...)
-	auth.RegisterAuthorizationServer(grpcServer, &ExampleBasicAuthHandler{})
+	auth.RegisterAuthorizationServer(grpcServer, &ExampleAuthHandler{})
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
