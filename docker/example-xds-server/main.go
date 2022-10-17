@@ -48,13 +48,13 @@ func mustNewAnypb(src protoreflect.ProtoMessage) *anypb.Any {
 }
 
 var (
-	ExampleProxyCluster *cluster.Cluster = &cluster.Cluster{
-		Name:                 "example-proxy",
+	ExampleUpstreamHttpCluster *cluster.Cluster = &cluster.Cluster{
+		Name:                 "example-upstream-http",
 		ConnectTimeout:       durationpb.New(5 * time.Second),
 		ClusterDiscoveryType: &cluster.Cluster_Type{Type: cluster.Cluster_LOGICAL_DNS},
 		LbPolicy:             cluster.Cluster_ROUND_ROBIN,
 		LoadAssignment: &endpoint.ClusterLoadAssignment{
-			ClusterName: "example-proxy",
+			ClusterName: "example-upstream-http",
 			Endpoints: []*endpoint.LocalityLbEndpoints{{
 				LbEndpoints: []*endpoint.LbEndpoint{{
 					HostIdentifier: &endpoint.LbEndpoint_Endpoint{
@@ -185,7 +185,7 @@ func GenerateSnapshot() *cache.Snapshot {
 	snap, _ := cache.NewSnapshot("1",
 		map[resource.Type][]types.Resource{
 			resource.RouteType:    {ExampleLocalRoute},
-			resource.ClusterType:  {ExampleProxyCluster},
+			resource.ClusterType:  {ExampleUpstreamHttpCluster},
 			resource.ListenerType: {ExampleProxyListener},
 		},
 	)

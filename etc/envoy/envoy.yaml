@@ -13,19 +13,6 @@ admin:
 
 static_resources:
   clusters:
-  - name: example-upstream-http
-    connect_timeout: 0.25s
-    type: STRICT_DNS
-    lb_policy: ROUND_ROBIN
-    load_assignment:
-      cluster_name: example-upstream-http
-      endpoints:
-      - lb_endpoints:
-        - endpoint:
-            address:
-              socket_address:
-                address: example-upstream
-                port_value: 80
   - name: example-auth-grpc
     connect_timeout: 0.25s
     type: STRICT_DNS
