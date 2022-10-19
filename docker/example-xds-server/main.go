@@ -233,13 +233,6 @@ func GenerateSnapshot() *cache.Snapshot {
 	return snap
 }
 
-const (
-	grpcKeepaliveTime        = 30 * time.Second
-	grpcKeepaliveTimeout     = 5 * time.Second
-	grpcKeepaliveMinTime     = 30 * time.Second
-	grpcMaxConcurrentStreams = 1000000
-)
-
 func registerServer(grpcServer *grpc.Server, server server.Server) {
 	// register services
 	discoverygrpc.RegisterAggregatedDiscoveryServiceServer(grpcServer, server)
@@ -250,6 +243,13 @@ func registerServer(grpcServer *grpc.Server, server server.Server) {
 	secretservice.RegisterSecretDiscoveryServiceServer(grpcServer, server)
 	runtimeservice.RegisterRuntimeDiscoveryServiceServer(grpcServer, server)
 }
+
+const (
+	grpcKeepaliveTime        = 30 * time.Second
+	grpcKeepaliveTimeout     = 5 * time.Second
+	grpcKeepaliveMinTime     = 30 * time.Second
+	grpcMaxConcurrentStreams = 1000000
+)
 
 // RunServer starts an xDS server at the given port.
 func RunServer(ctx context.Context, srv server.Server, port uint) {
