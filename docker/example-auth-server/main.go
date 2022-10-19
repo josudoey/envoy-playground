@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"time"
 
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
@@ -14,14 +13,6 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/code"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/keepalive"
-)
-
-const (
-	grpcKeepaliveTime        = 30 * time.Second
-	grpcKeepaliveTimeout     = 5 * time.Second
-	grpcKeepaliveMinTime     = 30 * time.Second
-	grpcMaxConcurrentStreams = 1000000
 )
 
 var _ auth.AuthorizationServer = (*ExampleAuthHandler)(nil)
@@ -108,23 +99,7 @@ func main() {
 	flag.UintVar(&port, "port", 80, "auth server port")
 	flag.Parse()
 
-	// gRPC golang library sets a very small upper bound for the number gRPC/h2
-	// streams over a single TCP connection. If a proxy multiplexes requests over
-	// a single connection to the management server, then it might lead to
-	// availability problems. Keepalive timeouts based on connection_keepalive parameter https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/examples#dynamic
-	var grpcOptions []grpc.ServerOption
-	grpcOptions = append(grpcOptions,
-		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
-		grpc.KeepaliveParams(keepalive.ServerParameters{
-			Time:    grpcKeepaliveTime,
-			Timeout: grpcKeepaliveTimeout,
-		}),
-		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
-			MinTime:             grpcKeepaliveMinTime,
-			PermitWithoutStream: true,
-		}),
-	)
-	grpcServer := grpc.NewServer(grpcOptions...)
+	grpcServer := grpc.NewServer()
 	auth.RegisterAuthorizationServer(grpcServer, &ExampleAuthHandler{})
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
