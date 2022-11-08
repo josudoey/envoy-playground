@@ -66,7 +66,7 @@ var (
 		TransportApiVersion: core.ApiVersion_V3,
 		StatusOnError:       &typev3.HttpStatus{Code: typev3.StatusCode(typev3.StatusCode_InternalServerError)},
 	})
-	ExampleBasicAuthFilter = &hcm.HttpFilter{
+	ExampleAuthFilter = &hcm.HttpFilter{
 		Name: wellknown.HTTPExternalAuthorization,
 		ConfigType: &hcm.HttpFilter_TypedConfig{
 			TypedConfig: ExampleAuthGRPC,
@@ -86,7 +86,7 @@ var (
 			Routes: []*route.Route{
 				{
 					TypedPerFilterConfig: map[string]*anypb.Any{
-						ExampleBasicAuthFilter.Name: mustNewAnypb(&ext_authz.ExtAuthzPerRoute{Override: &ext_authz.ExtAuthzPerRoute_CheckSettings{
+						ExampleAuthFilter.Name: mustNewAnypb(&ext_authz.ExtAuthzPerRoute{Override: &ext_authz.ExtAuthzPerRoute_CheckSettings{
 							CheckSettings: &ext_authz.CheckSettings{
 								ContextExtensions: map[string]string{
 									"auth-scheme": "bearer",
@@ -103,7 +103,7 @@ var (
 				},
 				{
 					TypedPerFilterConfig: map[string]*anypb.Any{
-						ExampleBasicAuthFilter.Name: mustNewAnypb(&ext_authz.ExtAuthzPerRoute{Override: &ext_authz.ExtAuthzPerRoute_CheckSettings{
+						ExampleAuthFilter.Name: mustNewAnypb(&ext_authz.ExtAuthzPerRoute{Override: &ext_authz.ExtAuthzPerRoute_CheckSettings{
 							CheckSettings: &ext_authz.CheckSettings{
 								ContextExtensions: map[string]string{
 									"auth-scheme": "basic",
@@ -119,7 +119,7 @@ var (
 					Action: ExampleUpstreamHttpRoute,
 				}, {
 					TypedPerFilterConfig: map[string]*anypb.Any{
-						ExampleBasicAuthFilter.Name: mustNewAnypb(&ext_authz.ExtAuthzPerRoute{Override: &ext_authz.ExtAuthzPerRoute_Disabled{
+						ExampleAuthFilter.Name: mustNewAnypb(&ext_authz.ExtAuthzPerRoute{Override: &ext_authz.ExtAuthzPerRoute_Disabled{
 							Disabled: true,
 						}}),
 					},
@@ -205,7 +205,7 @@ var (
 							CodecType:  hcm.HttpConnectionManager_AUTO,
 							StatPrefix: "http",
 							HttpFilters: []*hcm.HttpFilter{
-								ExampleBasicAuthFilter,
+								ExampleAuthFilter,
 								{
 									Name: wellknown.Router,
 									ConfigType: &hcm.HttpFilter_TypedConfig{
