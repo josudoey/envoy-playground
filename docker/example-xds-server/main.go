@@ -223,7 +223,8 @@ var (
 )
 
 func GenerateSnapshot() *cache.Snapshot {
-	snap, _ := cache.NewSnapshot("1",
+	version := "1"
+	snap, _ := cache.NewSnapshot(version,
 		map[resource.Type][]types.Resource{
 			resource.RouteType:    {ExampleLocalRoute},
 			resource.ClusterType:  {ExampleUpstreamHttpCluster},
